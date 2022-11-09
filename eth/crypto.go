@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"golang.org/x/crypto/sha3"
@@ -69,8 +70,11 @@ func privateKeyFromRawBytes(privateKeyBytes []byte) (*PrivateKey, error) {
 			len(privateKeyBytes), btcec.PrivKeyBytesLen)
 	}
 
-	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), privateKeyBytes)
-	return &PrivateKey{inner: (*ecdsa.PrivateKey)(privKey)}, nil
+	privKey := new(ecdsa.PrivateKey)
+	privKey.PublicKey.Curve = btcec.S256()
+	privKey.D = new(big.Int).SetBytes(privateKeyBytes)
+	privKey.PublicKey.X, privKey.PublicKey.Y = privKey.PublicKey.Curve.ScalarBaseMult(privateKeyBytes)
+	return &PrivateKey{inner: privKey}, nil
 }
 
 func (p *PrivateKey) String() string {
